@@ -81,3 +81,51 @@ function update_profile_fields($contactmethods)
 }
 add_filter('user_contactmethods', 'update_profile_fields', 10, 1);
 ```
+
+## Bonus
+
+```php
+/*
+
+################################################## 
+
+By default, when deleting a user in the WordPress Dashboard, you will be asked whether you want to delete all of that user's content or attribute it to another user. 
+However, this option applies to the default post type, not custom post types (CPT). 
+Nevertheless, this function also allows CPT to be either deleted or attributed to another user.
+
+*/
+
+function delete_user_content($user_id, $reassign, $user)
+{
+
+    // Check if the user has posts of the specified custom post type
+    $args = array(
+        'post_type' => 'courses',
+        'author' => $user_id,
+        'posts_per_page' => -1,
+    );
+
+    $user_posts = get_posts($args);
+
+    if (count($user_posts) < 1) return;
+
+    if ($reassign) {
+        foreach ($user_posts as $post) {
+            // Update the author of each post to the new user
+            wp_update_post(
+                array(
+                    'ID' => $post->ID,
+                    'post_author' => $reassign,
+                )
+            );
+        }
+        return;
+    }
+
+    foreach ($user_posts as $post) {
+        wp_delete_post($post->ID, true);
+    }
+
+}
+add_action('delete_user', 'delete_user_content', 10, 3);
+```
